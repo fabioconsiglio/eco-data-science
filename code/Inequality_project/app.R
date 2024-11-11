@@ -30,7 +30,14 @@ ui <- fluidPage(
         choices = unique(inequ_data_orig$Country),  # Populate with available countries
         selected = c('France', 'Germany', 'Norway', 'Spain', 'Peru', 'Argentina', 'Chile', 'Sub-Saharan Africa (WID)'),
         multiple = TRUE
-      )
+      ),
+     lectInput(
+     inputId = "selected_countries",
+     label = "Select Index:",
+     choices = unique(inequ_data_orig$index),  # hier müssen alle index rein
+     selected = c("Gini Coefficient", "Gini Coefficient After Tax", "Gini Coefficient Before Tax", "Palmer Ratio Index", "Income share of the richest 0.1% (before tax)", "Income share of the richest 1% (before tax)",  "Income share of the richest 1% (before tax")",)
+     multiple = TRUE
+    
     ),
     mainPanel(
       # Show the plot
