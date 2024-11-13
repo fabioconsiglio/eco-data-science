@@ -5,15 +5,14 @@ library(cowplot)
 
 
 # Import data
-homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/data/raw/homicide-rate-unodc.csv")
+homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/code/ggplot_project/data/raw/homicide-rate-unodc.csv")
 
 head(homicide_data)
-inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/data/raw/inequality-dataset.csv")
+inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/code/ggplot_project/data/raw/inequality-dataset.csv")
 
 colnames(inequ_data_orig)[3] <- "gini_before_tax"
 
 print(homicide_data)
-
 
 homicide_data_2017 <- homicide_data %>%
   filter(Year == 2017) %>%
@@ -71,14 +70,5 @@ corr <- cor(merged_data$gini_before_tax, merged_data$Homicide)
 corr
 
 
-
-# Inequality and crime rate across continents 
-continent = c("Africa (WID)", "Asia (WID)", "Europe (WID)", "North America (WID)", "Oceania (WID)", "South America (WID)")
-
-
-
-# Filter merged_data where Country contains any of the continent substrings
-inequ_crime_continent <- inequ_data_2017 %>%
-  filter(Country %in% continent)
 
 

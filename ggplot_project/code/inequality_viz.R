@@ -6,10 +6,8 @@ library(cowplot)
 
 
 # Import data
-#homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/data/raw/homicide-rate-unodc.csv")
 
-#head(homicide_data)
-inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/data/raw/inequality-dataset.csv")
+inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/code/ggplot_project/data/raw/inequality-dataset.csv")
 
 colnames(inequ_data_orig)[3] <- "gini_before_tax"
 
