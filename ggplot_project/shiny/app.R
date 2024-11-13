@@ -16,22 +16,45 @@ library(readr)
 # Load data
 inequ_homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/preprocessed/inequ_homicide_data.csv")
 
+finance_data_long <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/preprocessed/stock_data.csv")  # Load your finance dataset
+
+
+head(finance_data_long)
+
+
+# Create lists of measures
+inequality_measures <- colnames(inequ_homicide_data)[c(-1,-2,-3,-4)]  # Inequality measures
+homicide_measure <- colnames(inequ_homicide_data)[4]  # Homicide rate
+stock_indices <- unique(finance_data_long$Index)  # Stock indices
 # Define UI for application
 ui <- fluidPage(
-  titlePanel("Homicide and Inequality Data Visualization"),
+  titlePanel("Homicide, Inequality, and Financial Data Visualization"),
   
   sidebarLayout(
     sidebarPanel(
-      selectInput("inequality_measure", "Select Inequality Measure:",
-                  choices = colnames(inequ_homicide_data)[c(-1,-2,-3,-4)]),
-      selectInput("homicide_measure", "Add Homicide Rate:",
-                  choices = colnames(inequ_homicide_data)[4]),
+      selectInput("measure1", "Select First Measure:",
+                  choices = list(
+                    "Inequality Measures" = inequality_measures,
+                    "Homicide Rate" = homicide_measure,
+                    "Stock Indices" = stock_indices
+                  )
+      ),
+      selectInput("measure2", "Select Second Measure:",
+                  choices = list(
+                    "Inequality Measures" = inequality_measures,
+                    "Homicide Rate" = homicide_measure,
+                    "Stock Indices" = stock_indices
+                  )
+      ),
+      # Always display the country selection input
       selectInput("country", "Select Country:",
-                  choices = unique(inequ_homicide_data$country), multiple = TRUE)
-    ),
+                  choices = unique(inequ_homicide_data$country), multiple = TRUE),
+      # Add checkbox for world events
+      checkboxInput("show_events", "Show World Events", value = FALSE)
+    ), 
     
     mainPanel(
-      plotlyOutput("rate_plot")  # Use plotlyOutput for interactivity
+      plotlyOutput("rate_plot")
     )
   )
 )
@@ -40,37 +63,146 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   output$rate_plot <- renderPlotly({
-    req(input$country, input$inequality_measure, input$homicide_measure)
+    req(input$measure1, input$measure2)
     
-    # Filter data by selected countries
-    filtered_data <- inequ_homicide_data %>%
-      filter(country %in% input$country)
+    measure1 <- input$measure1
+    measure2 <- input$measure2
     
-    # Create a ggplot
-    p <- ggplot() +
-      # Inequality measure line
-      geom_line(data = filtered_data, aes(x = year, y = .data[[input$inequality_measure]], color = country), linetype = "solid") +
-      
-      # Homicide rate line with a different line type
-      geom_line(data = filtered_data, aes(x = year, y = .data[[input$homicide_measure]], color = country), linetype = "dashed") +
-      
-      labs(x = "Year", y = "Rates") +
-      theme_minimal() +
-      theme(legend.position = "bottom") +
-      ggtitle("Yearly Trends for Selected Inequality Measure and Homicide Rate by Country") +
-      
-      # Secondary y-axis for the homicide measure
-      scale_y_continuous(
-        name = input$inequality_measure,
-        sec.axis = sec_axis(~., name = input$homicide_measure)
+    measures_inequ <- c(inequality_measures, homicide_measure)
+    measures_stock <- stock_indices
+    
+    measure1_in_inequ <- measure1 %in% measures_inequ
+    measure2_in_inequ <- measure2 %in% measures_inequ
+    
+    measure1_in_finance <- measure1 %in% measures_stock
+    measure2_in_finance <- measure2 %in% measures_stock
+    
+    # Filter inequ_homicide_data
+    if (measure1_in_inequ || measure2_in_inequ) {
+      req(input$country)
+      filtered_inequ_data <- inequ_homicide_data %>%
+        filter(country %in% input$country) %>%
+        rename(Date = year_date)
+    } else {
+      filtered_inequ_data <- data.frame()
+    }
+    
+    # Filter finance_data_long
+    if (measure1_in_finance || measure2_in_finance) {
+      filtered_finance_data <- finance_data_long %>% filter(Index %in% c(measure1, measure2))
+    } else {
+      filtered_finance_data <- data.frame()
+    }
+    
+    # Initialize plotly object
+    plot <- plot_ly()
+    
+    # Add measure1
+    if (measure1_in_inequ) {
+      data1 <- filtered_inequ_data
+      for (country in unique(data1$country)) {
+        country_data <- data1 %>% filter(country == !!country)
+        plot <- plot %>% add_lines(
+          x = country_data$Date,
+          y = country_data[[measure1]],
+          name = paste(measure1, "-", country),
+          yaxis = "y1",
+          line = list(dash = 'solid')
+        )
+      }
+    } else if (measure1_in_finance) {
+      data1 <- filtered_finance_data %>% filter(Index == measure1)
+      plot <- plot %>% add_lines(
+        x = data1$Date,
+        y = data1$Close,
+        name = measure1,
+        yaxis = "y1",
+        line = list(dash = 'solid')
+      )
+    }
+    
+    # Add measure2
+    if (measure2_in_inequ) {
+      data2 <- filtered_inequ_data
+      for (country in unique(data2$country)) {
+        country_data <- data2 %>% filter(country == !!country)
+        plot <- plot %>% add_lines(
+          x = country_data$Date,
+          y = country_data[[measure2]],
+          name = paste(measure2, "-", country),
+          yaxis = "y2",
+          line = list(dash = 'dash')
+        )
+      }
+    } else if (measure2_in_finance) {
+      data2 <- filtered_finance_data %>% filter(Index == measure2)
+      plot <- plot %>% add_lines(
+        x = data2$Date,
+        y = data2$Close,
+        name = measure2,
+        yaxis = "y2",
+        line = list(dash = 'dash')
+      )
+    }
+    
+    # Set up the layout with multiple y-axes
+    plot <- plot %>%
+      layout(
+        #title = "Comparison of Selected Measures",
+        xaxis = list(title = "Date"),
+        yaxis = list(title = measure1, side = "left"),
+        yaxis2 = list(title = measure2, overlaying = "y", side = "right")
+        #legend = list(x = 5, y = -0.9)
       )
     
-    # Convert ggplot to plotly for interactivity
-    ggplotly(p, tooltip = c("x", "y", "color"))  # Tooltip shows x (year), y (rate), and country
+    # Add world events if checkbox is selected
+    if (input$show_events) {
+      # Define the events
+      events <- data.frame(
+        date = as.Date(c("1991-01-01", "1997-01-01", "2000-01-01", "2008-01-01", "2020-01-01")),
+        label = c("Fall of the Soviet Union", "Asian Financial Crisis", "Dotcom Bubble Burst", "Financial Crisis", "COVID-19")
+      )
+      
+      # Add vertical lines for events as shapes
+      event_shapes <- lapply(1:nrow(events), function(i) {
+        list(
+          type = "line",
+          x0 = events$date[i],
+          x1 = events$date[i],
+          y0 = 0,
+          y1 = 1,
+          xref = "x",
+          yref = "paper",
+          line = list(color = "black", dash = "dash")
+        )
+      })
+      
+      # Add annotations for events
+      event_annotations <- lapply(1:nrow(events), function(i) {
+        list(
+          x = events$date[i],
+          y = 1.05,  # Position slightly above the plot
+          xref = "x",
+          yref = "paper",
+          text = events$label[i],
+          showarrow = FALSE,
+          xanchor = 'left',
+          textangle = -90,
+          font = list(color = "black", size = 10)
+        )
+      })
+      
+      # Add shapes and annotations to the plot layout
+      plot <- plot %>%
+        layout(
+          shapes = event_shapes,
+          annotations = event_annotations
+        )
+    }
+    
+    plot
   })
 }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-

@@ -5,8 +5,7 @@ library(cowplot)
 
 
 # Import data
-fin_data <- read_csv("/Users/fabianmahner/eco-data-science/data/raw/INDICES_DATA.csv")
-
+fin_data <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/raw/INDICES_DATA.csv")
 print(fin_data)
 
 # prepare fin data 
@@ -84,7 +83,7 @@ dev.off()
 
 # top 1% share development as inequality measure and comparing it in four different plots 
 # with the corresponding nation for each plot
-inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/data/raw/inequality-dataset.csv")
+inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/raw/inequality-dataset.csv")
 colnames(inequ_data_orig)[3] <- "gini_before_tax"
 
 
@@ -97,7 +96,8 @@ inequ_g7 <- inequ_data_orig %>%
     gini_coef = "gini_before_tax",
     top_10_income_share = "Income share of the richest 10% (before tax) (World Inequality Database)" ,
     top_1_income_share =  "Income share of the richest 1% (before tax) (World Inequality Database)",
-    top_01_income_share = "Income share of the richest 0.1% (before tax) (World Inequality Database)"
+    top_01_income_share = "Income share of the richest 0.1% (before tax) (World Inequality Database)",
+    palma_ratio = "Palma ratio (before tax) (World Inequality Database)"
   ) %>% 
   na.omit()
 
@@ -124,6 +124,18 @@ dow_jones <- fin_data_clean %>%
   group_by(year) %>%
   summarize(avg_dow_jones = mean(`Dow Jones`, na.rm = TRUE))  # Average Dow Jones by year
 
+
+## S & P 500
+sp500 <- fin_data_clean %>%
+  mutate(
+    `S&P 500` = as.numeric(`S&P 500`),
+    Date = as.Date(Date),
+    year = year(Date)
+  ) %>%
+  group_by(year) %>%
+  summarize(avg_sp500 = mean(`S&P 500`, na.rm = TRUE))
+
+
 # Filter inequality data for Canada and USA
 inequality_data_filtered <- inequ_g7 %>%
   filter(Country %in% c("Canada", "United States"))
@@ -132,11 +144,14 @@ inequality_data_filtered <- inequ_g7 %>%
 merged_data <- inequality_data_filtered %>%
   full_join(dow_jones, by = "year")
 
+merged_data <- merged_data %>%
+  full_join(sp500, by = "year")
 # keep only relevant columns
-merged_data = merged_data[, c("Country","year", "top_1_income_share", "avg_dow_jones")]
+merged_data = merged_data[, c("Country","year", "gini_coef", "avg_dow_jones", "palma_ratio", "top_1_income_share")]
+
+
 
 # Plotting
-
 dow_jones_inequ <- ggplot(merged_data, aes(x = year)) +
   geom_line(data = subset(merged_data, Country == "Canada"), 
             aes(y = top_1_income_share, color = "Canada"), size = 1) +
@@ -154,7 +169,7 @@ dow_jones_inequ <- ggplot(merged_data, aes(x = year)) +
   labs(title = "Top 1 % Income Share in US and Canada with Trend of Dow Jones", x = "Year") +
   scale_color_manual(name = "Legend", 
                      values = c("Canada" = "red", "US" = "darkblue", 
-                                 "Dow Jones" = "skyblue")) +
+                                "Dow Jones" = "skyblue")) +
   theme_minimal() +
   theme(
     axis.title.y = element_text(color = "black"),
@@ -163,6 +178,8 @@ dow_jones_inequ <- ggplot(merged_data, aes(x = year)) +
   )
 
 dow_jones_inequ
+
+
 # Germany development DAX 
 dax <- fin_data_clean %>%
   mutate(
@@ -189,7 +206,7 @@ merged_data_ger = merged_data_ger[, c("Country","year", "top_1_income_share", "a
 # Plotting
 dax_ineq <- ggplot(merged_data_ger, aes(x = year)) +
   geom_line(aes(y = top_1_income_share, color = "top_1_income_share"), size = 1) +
-  geom_line(aes(y = avg_dax / 1000, color = "DAX"), size = 1) + # Scaled to match the other y-axis
+  geom_line(aes(y = avg_dax / 1000, color = "DAX"), size = 1, linetype = "dashed") + # Scaled to match the other y-axis
   scale_x_continuous(
     name = "Year",
     limits = c(1997, max(merged_data_ger$year))) +
@@ -229,7 +246,7 @@ merged_data_jap = merged_data_jap[, c("Country","year", "top_1_income_share", "a
 # plotting
 nikk_ineq <- ggplot(merged_data_jap, aes(x = year)) +
   geom_line(aes(y = top_1_income_share, color = "top_1_income_share"), size = 1) +
-  geom_line(aes(y = avg_nikkei / 1000, color = "Nikkei"), size = 1) +
+  geom_line(aes(y = avg_nikkei / 1000, color = "Nikkei"), size = 1,  linetype = "dashed") +
   scale_x_continuous(
     name = "Year",
     limits = c(1997, max(merged_data_jap$year)))+ # Scaled to match the other y-axis
@@ -246,7 +263,7 @@ nikk_ineq <- ggplot(merged_data_jap, aes(x = year)) +
     legend.position = "bottom"
   )
 
-
+nikk_ineq
 # combining all plots 
 
 dow_jones_inequ <- dow_jones_inequ + theme(legend.position = "none")
