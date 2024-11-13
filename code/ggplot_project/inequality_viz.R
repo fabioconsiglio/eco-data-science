@@ -6,9 +6,9 @@ library(cowplot)
 
 
 # Import data
-homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/data/raw/homicide-rate-unodc.csv")
+#homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/data/raw/homicide-rate-unodc.csv")
 
-head(homicide_data)
+#head(homicide_data)
 inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/data/raw/inequality-dataset.csv")
 
 colnames(inequ_data_orig)[3] <- "gini_before_tax"
@@ -93,37 +93,47 @@ print(inequ_g7)
 
 gini_g7 <- ggplot(inequ_g7, aes(x = year, y = gini_coef, color = Country)) +
   geom_line() +
-  labs(title = "Gini Coefficient Across Years by Country",
+  labs(title = "Gini Coefficient (pre-tax)",
        x = "Year",
        y = "Gini Coefficient") +
-  theme_minimal()
+  theme_minimal() +
+  
+#export plot 
+pdf(file = 'figures/gini_g7_across_years.pdf', width = 6, 
+    height = 4)
 gini_g7
+dev.off()
 
 # Palmer ratio 
 palmer_g7 <- ggplot(inequ_g7, aes(x = year, y = palma_ratio, color = Country)) +
   geom_line() +
-  labs(title = "Palma Ratio Across Years by Country",
+  labs(title = "Palma Ratio (pre-tax)",
        x = "Year",
        y = "Palma Ratio") +
   theme_minimal()
 
+#export plot 
+pdf(file = 'figures/palmer_g7_across_years.pdf', width = 6, 
+    height = 4)
 palmer_g7
+
+dev.off()
 
 # 0.1 
 zero_one_g7 <- ggplot(inequ_g7, aes(x = year, y = top_01_income_share, color = Country)) +
   geom_line() +
-  labs(title = "Top 0.1% Income Share Across Years by Country",
+  labs(title = "Top 0.1% Income Share (pre-tax)",
        x = "Year",
-       y = "Top 0.1% Income Share") +
+       y = "Income Share in %") +
   theme_minimal()
 zero_one_g7
 
 # 10% 
 ten_g7 <- ggplot(inequ_g7, aes(x = year, y = top_10_income_share, color = Country)) +
   geom_line() +
-  labs(title = "Top 10% Income Share Across Years by Country",
+  labs(title = "Top 10% Income Share (pre-tax)",
        x = "Year",
-       y = "Top 10% Income Share") +
+       y = "Income Share in %") +
   theme_minimal()
 ten_g7
 
@@ -147,16 +157,28 @@ combined_plot <- plot_grid(
 
 # Display the combined plot
 
+pdf(file = 'figures/inequality_measures.pdf', width = 16, 
+    height = 10)
+combined_plot
+dev.off()
 print(combined_plot)
 
 
 # Highlight important events in world history 
 gini_g7 <- ggplot(inequ_g7, aes(x = year, y = gini_coef, color = Country)) +
   geom_line() +
-  labs(title = "Gini Coefficient Across Years by Country",
+  labs(
        x = "Year",
        y = "Gini Coefficient") +
   theme_minimal() +
+  theme(
+    legend.text = element_text(size = 15),  # Adjust the size of legend labels
+    legend.title = element_text(size = 18),
+    axis.title.x = element_text(size = 14),      # Adjust the size of x-axis label
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 12),       # Adjust the size of x-axis numbers
+    axis.text.y = element_text(size = 12) # Adjust the size of legend title
+  )+
   geom_vline(xintercept = 1991, linetype = "dashed", color = "grey") +
   geom_vline(xintercept = 1997, linetype = "dashed", color = "grey") +
   geom_vline(xintercept = 2000, linetype = "dashed", color = "grey") +
@@ -164,11 +186,16 @@ gini_g7 <- ggplot(inequ_g7, aes(x = year, y = gini_coef, color = Country)) +
   geom_vline(xintercept = 2020, linetype = "dashed", color = "grey") +
 
   # Add annotations for events
-  annotate("text", x = 1991, y = max(inequ_g7$gini_coef)*0.97, label = "Fall of the Soviet Union", angle = 90, vjust = -0.5, color = "black")+
-  annotate("text", x = 1997, y = max(inequ_g7$gini_coef)*0.97, label = "Asian Financial Crisis", angle = 90, vjust = -0.5, color = "black")+
-  annotate("text", x = 2000, y = max(inequ_g7$gini_coef)*0.97, label = "Dotcom Bubble Burst", angle = 90, vjust = -0.5, color = "black")+
-  annotate("text", x = 2008, y = max(inequ_g7$gini_coef)*0.97, label = "Financial Crisis", angle = 90, vjust = -0.5, color = "black") +
-  annotate("text", x = 2020, y = max(inequ_g7$gini_coef)*0.99, label = "COVID-19", angle = 90, vjust = -0.5, color = "black")
+  annotate("text", x = 1991, y = max(inequ_g7$gini_coef)*0.97, label = "Fall of the Soviet Union", angle = 90, vjust = -0.5, color = "black", size = 5)+
+  annotate("text", x = 1997, y = max(inequ_g7$gini_coef)*0.97, label = "Asian Financial Crisis", angle = 90, vjust = -0.5, color = "black", size = 5)+
+  annotate("text", x = 2000, y = max(inequ_g7$gini_coef)*0.97, label = "Dotcom Bubble Burst", angle = 90, vjust = -0.5, color = "black", size = 5)+
+  annotate("text", x = 2008, y = max(inequ_g7$gini_coef)*0.97, label = "Financial Crisis", angle = 90, vjust = -0.5, color = "black", size = 5) +
+  annotate("text", x = 2020, y = max(inequ_g7$gini_coef)*0.99, label = "COVID-19", angle = 90, vjust = -0.5, color = "black", size = 5)
 
+pdf(file = 'figures/gini_g7_incl_world_events.pdf', width = 16, 
+    height = 10)
 gini_g7
+
+dev.off()
+
 

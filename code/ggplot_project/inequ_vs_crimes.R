@@ -42,17 +42,26 @@ merged_data <- merged_data[complete.cases(merged_data), ]
 inequ_vs_crimes_plot <- ggplot(merged_data, aes(x = gini_before_tax, y = Homicide)) +
   geom_point(aes(color = Country), size = 3) +
   #geom_text(aes(label = Country), hjust = 0, vjust = 0) + maybe display only outliers 
-  geom_smooth(method = "lm", se = FALSE, color = "black") + # Add correlation line
-  labs(title = "Homicide rate vs. Gini coefficient in 2017",
+  geom_smooth(method = "lm", se = FALSE, color = "black", size = 0.5) + # Add correlation line
+  labs(
        x = "Gini coefficient",
-       y = "Homicide rate per 100,000 population") +
+       y = "Homicide rate (per 100,000 population)") +
   theme_minimal() +
-  theme(legend.position = "none") +
+  theme(legend.position = "none",
+          axis.title.x = element_text(size = 14),      # Adjust the size of x-axis label
+          axis.title.y = element_text(size = 14),
+          axis.text.x = element_text(size = 12),       # Adjust the size of x-axis numbers
+          axis.text.y = element_text(size = 12) # Adjust the size of legend title
+        ) +
   scale_y_continuous(
     limits = c(0, 15))
 
 
+pdf(file = 'figures/gini_vs_crimes.pdf', width = 16, 
+    height = 10)
+inequ_vs_crimes_plot
 
+dev.off()
 
 
 inequ_vs_crimes_plot
