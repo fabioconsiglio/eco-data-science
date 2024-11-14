@@ -1,4 +1,4 @@
-"","country","year","homicide_rate","gini_coef","top_10_income_share","top_1_income_share","top_01_income_share","palma_ratio","year_date"
+"","country","year","homicide_rate","Gini Coefficient","Top 10 % Income Share","Top 1 % Income Share","Top 0.1 % Income Share","Palma Ratio","year_date"
 "1","Afghanistan",2009,4.0715265,NA,NA,NA,NA,NA,2009-01-01
 "2","Afghanistan",2010,3.4870927,NA,NA,NA,NA,NA,2010-01-01
 "3","Afghanistan",2011,4.208668,NA,NA,NA,NA,NA,2011-01-01

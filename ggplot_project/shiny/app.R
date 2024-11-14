@@ -23,7 +23,7 @@ head(finance_data_long)
 
 
 # Create lists of measures
-inequality_measures <- colnames(inequ_homicide_data)[c(-1,-2,-3,-4)]  # Inequality measures
+inequality_measures <- colnames(inequ_homicide_data)[c(-1,-2,-3,-4,-10)]  # Inequality measures
 homicide_measure <- colnames(inequ_homicide_data)[4]  # Homicide rate
 stock_indices <- unique(finance_data_long$Index)  # Stock indices
 # Define UI for application
@@ -35,20 +35,21 @@ ui <- fluidPage(
       selectInput("measure1", "Select First Measure:",
                   choices = list(
                     "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = homicide_measure,
+                    "Homicide Rate" = list("Homicide Rate" = "homicide_rate"),
                     "Stock Indices" = stock_indices
-                  )
+                  ), selected = "Gini Coefficient" # Default selection
       ),
       selectInput("measure2", "Select Second Measure:",
                   choices = list(
                     "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = homicide_measure,
+                    "Homicide Rate" = list("Homicide Rate" = "homicide_rate"),
                     "Stock Indices" = stock_indices
-                  )
+                  ), 
+                  selected = "Palma Ratio" 
       ),
       # Always display the country selection input
       selectInput("country", "Select Country:",
-                  choices = unique(inequ_homicide_data$country), multiple = TRUE),
+                  choices = unique(inequ_homicide_data$country), selected = c("Germany","Norway") , multiple = TRUE),
       # Add checkbox for world events
       checkboxInput("show_events", "Show World Events", value = FALSE)
     ), 
@@ -149,7 +150,7 @@ server <- function(input, output) {
     plot <- plot %>%
       layout(
         #title = "Comparison of Selected Measures",
-        xaxis = list(title = "Date"),
+        xaxis = list(title = "Year"),
         yaxis = list(title = measure1, side = "left"),
         yaxis2 = list(title = measure2, overlaying = "y", side = "right")
         #legend = list(x = 5, y = -0.9)

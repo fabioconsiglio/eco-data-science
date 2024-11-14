@@ -2,6 +2,8 @@ library(tidyverse)
 library(readr)
 library(dplyr)
 library(cowplot)
+library(ggplot2)
+library(lubridate)
 
 
 # Import data
@@ -11,15 +13,16 @@ print(fin_data)
 # prepare fin data 
 fin_data_clean <- fin_data %>%
   select(
-    Date = `...1`,       # Assuming the date column is the first column
-    GSPC_Close = `...5`, # Replace `...6` with the actual position of the ^GSPC close column
-    DJI_Close = `...19`, # Replace `...15` with the actual position of the ^DJI close column
-    GDAXI_Close = `...61`, # Adjust for the actual position of ^GDAXI
-    N225_Close = `...103`   # Adjust for the actual position of ^N225
+    Date = `...1`,       # 
+    GSPC_Close = `...5`, # Adjust for the actual position of ^GSPC aka S&P 500
+    DJI_Close = `...19`, # Adjust for the actual position of ^DJI aka Dow Jones
+    GDAXI_Close = `...61`, # Adjust for the actual position of ^GDAXI aka DAX
+    N225_Close = `...103`   # Adjust for the actual position of ^N225 aka Nikkei
   )
 
 # Drop First row
 fin_data_clean <- fin_data_clean[-1, ]
+
 # convert date format to date
 fin_data_clean$Date <- as.Date(fin_data_clean$Date, format = "%m/%d/%Y")
 #rename columns
@@ -33,38 +36,41 @@ fin_data_clean <- fin_data_clean %>%
     `Nikkei` = N225_Close
   )
 
+# Converting to long format for plotting
 clean_data_long <- fin_data_clean %>%
   pivot_longer(cols = -Date, names_to = "Index", values_to = "Close") %>%
   mutate(Close = as.numeric(Close)) # Convert Close values to numeric for plotting
 
 # Plotting
 stock_dev_incl_world_events <- ggplot(clean_data_long, aes(x = Date, y = Close, color = Index)) +
-  geom_line() +
+  geom_line(size = 1) +
   labs(
-    #title = "Closing Prices of Major Indices Over Time",
     x = "Date",
     y = "Close Price",
     color = "Index"
   ) +
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 25),
-    legend.position = "bottom", 
+    plot.title = element_text(hjust = 0.5, size = 25), # Adjust the size of the plot title
+    legend.key.size = unit(1, 'cm'),        # Change legend key size
+    legend.key.height = unit(1, 'cm'),      # Change legend key height
+    legend.key.width = unit(1, 'cm'),       # Change legend key width
+    legend.position = "bottom",             # Change the position of the legend
     legend.text = element_text(size = 15),  # Adjust the size of legend labels
-    legend.title = element_text(size = 18),
-    axis.title.x = element_text(size = 14),      # Adjust the size of x-axis label
-    axis.title.y = element_text(size = 14),
-    axis.text.x = element_text(size = 12),       # Adjust the size of x-axis numbers
-    axis.text.y = element_text(size = 12),
+    legend.title = element_text(size = 18), # Adjust the size of legend title
+    axis.title.x = element_text(size = 14), # Adjust the size of x-axis label
+    axis.title.y = element_text(size = 14), # Adjust the size of y-axis label
+    axis.text.x = element_text(size = 12),  # Adjust the size of x-axis numbers
+    axis.text.y = element_text(size = 12),  # Adjust the size of y-axis numbers
   ) +
-  # Add vertical lines for events
+  # Adding vertical lines for events
   geom_vline(xintercept = as.Date("1991-01-01"), linetype = "dashed", color = "grey") +
   geom_vline(xintercept = as.Date("1997-01-01"), linetype = "dashed", color = "grey") +
   geom_vline(xintercept = as.Date("2000-01-01"), linetype = "dashed", color = "grey") +
   geom_vline(xintercept = as.Date("2008-01-01"), linetype = "dashed", color = "grey") +
   geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "grey") +
   
-  # Add annotations for events
+  # Adding annotations for events
   annotate("text", x = as.Date("1997-01-01"), y = 35000, 
            label = "Asian Financial Crisis", angle = 90, vjust = -0.5, color = "black") +
   annotate("text", x = as.Date("2000-01-01"), y = 35000 , 
@@ -79,12 +85,12 @@ pdf(file = 'figures/stock_dev_incl_world_events.pdf', width = 16,
 stock_dev_incl_world_events
 
 dev.off()
-
+stock_dev_incl_world_events 
 
 # top 1% share development as inequality measure and comparing it in four different plots 
 # with the corresponding nation for each plot
+
 inequ_data_orig <-  read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/raw/inequality-dataset.csv")
-colnames(inequ_data_orig)[3] <- "gini_before_tax"
 
 
 inequ_g7 <- inequ_data_orig %>%
@@ -93,7 +99,7 @@ inequ_g7 <- inequ_data_orig %>%
   select(1:8) %>%
   rename(
     year = "Year",
-    gini_coef = "gini_before_tax",
+    gini_coef = "Gini coefficient (before tax) (World Inequality Database)",
     top_10_income_share = "Income share of the richest 10% (before tax) (World Inequality Database)" ,
     top_1_income_share =  "Income share of the richest 1% (before tax) (World Inequality Database)",
     top_01_income_share = "Income share of the richest 0.1% (before tax) (World Inequality Database)",
@@ -108,10 +114,6 @@ inequ_g7 <- inequ_data_orig %>%
 
 inequ_g7
 
-
-library(dplyr)
-library(ggplot2)
-library(lubridate)
 
 # Convert necessary columns to numeric
 # Convert Dow Jones to numeric and extract the year
@@ -158,7 +160,7 @@ dow_jones_inequ <- ggplot(merged_data, aes(x = year)) +
   geom_line(data = subset(merged_data, Country == "United States"), 
             aes(y = top_1_income_share, color = "US"), size = 1) +
   geom_line(data = subset(merged_data, Country == "United States"), 
-            aes(y = avg_dow_jones / 3000, color = "Dow Jones"), size = 1) +
+            aes(y = avg_dow_jones / 3000, color = "Dow Jones"), size = 1, linetype = "dashed") +
   scale_x_continuous(
     name = "Year",
     limits = c(1997, max(merged_data$year))) + 
@@ -190,15 +192,15 @@ dax <- fin_data_clean %>%
   group_by(year) %>%
   summarize(avg_dax = mean(`DAX`, na.rm = TRUE))
 
-# filter inequality data for Germany and Japan
+# Filter inequality data for Germany 
 inequality_data_ger<- inequ_g7 %>%
   filter(Country %in% c("Germany"))
 
-# Merge data on year for both Germany and Japan
+# Merge data on year for both Germany
 merged_data_ger <- inequality_data_ger %>%
   full_join(dax, by = "year")
 
-# keep only relevant columns
+# Keep only relevant columns
 
 merged_data_ger = merged_data_ger[, c("Country","year", "top_1_income_share", "avg_dax")]
 

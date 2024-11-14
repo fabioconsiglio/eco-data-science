@@ -17,11 +17,11 @@ inequ_data <- inequ_data_orig %>%
   rename(
     country = "Country",
     year ="Year" ,
-    gini_coef = "gini_before_tax" ,
-    palma_ratio = "Palma ratio (before tax) (World Inequality Database)" ,
-    top_10_income_share = "Income share of the richest 10% (before tax) (World Inequality Database)" ,
-    top_1_income_share =  "Income share of the richest 1% (before tax) (World Inequality Database)",
-    top_01_income_share = "Income share of the richest 0.1% (before tax) (World Inequality Database)")
+    "Gini Coefficient" = "gini_before_tax" ,
+    "Palma Ratio" = "Palma ratio (before tax) (World Inequality Database)" ,
+    "Top 10 % Income Share" = "Income share of the richest 10% (before tax) (World Inequality Database)" ,
+    "Top 1 % Income Share" =  "Income share of the richest 1% (before tax) (World Inequality Database)",
+    "Top 0.1 % Income Share" = "Income share of the richest 0.1% (before tax) (World Inequality Database)")
 
 
 homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/raw/homicide-rate-unodc.csv")
