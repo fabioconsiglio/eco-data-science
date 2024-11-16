@@ -29,7 +29,7 @@ colnames(homicide_data)[1] <- "country"
 homicide_data <- homicide_data %>% 
   filter(Year >= 1980) %>% 
   select(1,3,4) %>%
-  rename(homicide_rate = "Homicide rate per 100,000 population - Both sexes - All ages",
+  rename("Homicide Rate" = "Homicide rate per 100,000 population - Both sexes - All ages",
          year = "Year")
          
 # merging homicide data with inequality data
@@ -40,7 +40,7 @@ inequ_homicide_data <- inequ_homicide_data %>%
 n_distinct(inequ_homicide_data$country)
 
 
-write.csv(inequ_homicide_data, "data/preprocessed/inequ_homicide_data.csv")
+write.csv(inequ_homicide_data, "/Users/fabianmahner/eco-data-science/ggplot_project/shiny/inequ_homicide_data.csv")
 
 # STOCK MARKET DATA
 fin_data <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/raw/INDICES_DATA.csv")
@@ -73,7 +73,7 @@ fin_data_long <- fin_data_clean %>%
   mutate(Close = as.numeric(Close)) # Convert Close values to numeric for plotting
 
 
-write.csv(fin_data_long, "data/preprocessed/stock_data.csv")
+write.csv(fin_data_long, "/Users/fabianmahner/eco-data-science/ggplot_project/shiny/stock_data.csv")
 
 
 print(fin_data_clean)

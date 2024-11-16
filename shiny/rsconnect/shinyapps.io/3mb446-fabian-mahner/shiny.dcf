@@ -1,10 +1,12 @@
 name: shiny
-title:
+title: shiny
 username: 3mb446-fabian-mahner
 account: 3mb446-fabian-mahner
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 13338014
-bundleId: 9362400
-url: https://3mb446-fabian-mahner.shinyapps.io/shiny/
+appId: 13338221
+bundleId: 9363141
+url: https://fabian-mahner.shinyapps.io/shiny/
 version: 1
+asMultiple: FALSE
+asStatic: FALSE

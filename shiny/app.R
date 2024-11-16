@@ -9,14 +9,13 @@
 # Load necessary libraries
 library(shiny)
 library(dplyr)
-library(ggplot2)
 library(plotly)
 library(readr)
 
 # Load data
-inequ_homicide_data <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/preprocessed/inequ_homicide_data.csv")
+inequ_homicide_data <- read_csv("inequ_homicide_data.csv")
 
-finance_data_long <- read_csv("/Users/fabianmahner/eco-data-science/ggplot_project/data/preprocessed/stock_data.csv")  # Load your finance dataset
+finance_data_long <- read_csv("stock_data.csv")  # Load your finance dataset
 
 
 head(finance_data_long)
@@ -28,40 +27,103 @@ homicide_measure <- colnames(inequ_homicide_data)[4]  # Homicide rate
 stock_indices <- unique(finance_data_long$Index)  # Stock indices
 # Define UI for application
 ui <- fluidPage(
-  titlePanel("Homicide, Inequality, and Financial Data Visualization"),
-  
+  titlePanel("Comparing Trends in Inequality, Homicide and Financial Development"),
   sidebarLayout(
     sidebarPanel(
       selectInput("measure1", "Select First Measure:",
                   choices = list(
                     "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = list("Homicide Rate" = "homicide_rate"),
+                    "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
                     "Stock Indices" = stock_indices
                   ), selected = "Gini Coefficient" # Default selection
       ),
       selectInput("measure2", "Select Second Measure:",
                   choices = list(
                     "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = list("Homicide Rate" = "homicide_rate"),
+                    "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
                     "Stock Indices" = stock_indices
                   ), 
                   selected = "Palma Ratio" 
       ),
       # Always display the country selection input
       selectInput("country", "Select Country:",
-                  choices = unique(inequ_homicide_data$country), selected = c("Germany","Norway") , multiple = TRUE),
+                  choices = unique(inequ_homicide_data$country), selected = c("United States","Norway") , multiple = TRUE),
       # Add checkbox for world events
-      checkboxInput("show_events", "Show World Events", value = FALSE)
+      checkboxInput("show_events", "Show World Events", value = FALSE),
+      actionButton("random_select", "Randomly Select Parameters"), 
+      # Button
+      downloadButton("downloadData", "Download Data as .csv")
     ), 
     
     mainPanel(
-      plotlyOutput("rate_plot")
+      plotlyOutput("rate_plot"),
+      includeHTML("description.html")
     )
   )
 )
 
 # Define server logic
-server <- function(input, output) {
+server <- function(input, output, session) {
+  # Download handler for exporting data as CSV
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("filtered_data", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      
+      # Determine if selected measures are from inequality/homicide or finance data
+      measures_inequ <- c(inequality_measures, homicide_measure)
+      measures_stock <- stock_indices
+      
+      # If both measures are from the inequality/homicide data
+      if (input$measure1 %in% measures_inequ && input$measure2 %in% measures_inequ) {
+        filtered_data <- inequ_homicide_data %>%
+          filter(country %in% input$country) %>%
+          select(year_date, country, 
+                 !!input$measure1 := all_of(input$measure1), 
+                 !!input$measure2 := all_of(input$measure2))
+        
+        # If both measures are from the finance data
+      } else if (input$measure1 %in% measures_stock && input$measure2 %in% measures_stock) {
+        filtered_data <- finance_data_long %>%
+          filter(Index %in% c(input$measure1, input$measure2)) %>%
+          select(Date, Index, Close) %>%
+          pivot_wider(names_from = Index, values_from = Close)
+        
+        # If one measure from each dataset, merge them by date
+      } else {
+        # Filter inequality/homicide data based on selected country and measure
+        filtered_inequ_data <- inequ_homicide_data %>%
+          filter(country %in% input$country) %>%
+          select(year_date, country, 
+                 !!input$measure1 := all_of(input$measure1))
+        
+        # Filter finance data based on selected stock measure
+        filtered_finance_data <- finance_data_long %>%
+          filter(Index == input$measure2) %>%
+          select(Date, Close) %>%
+          rename(year_date = Date, !!input$measure2 := Close)
+        
+        # Merge both datasets on the date column
+        filtered_data <- merge(filtered_inequ_data, filtered_finance_data, by = "year_date", all = TRUE)
+      }
+      
+      # Write the final filtered data to CSV
+      write.csv(filtered_data, file, row.names = FALSE)
+    }
+  )
+    
+    # Observe random selection button
+    observeEvent(input$random_select, {
+      # Randomly sample a measure from each category
+      random_measure1 <- sample(c(inequality_measures, "homicide_rate", stock_indices), 1)
+      random_measure2 <- sample(c(inequality_measures, "homicide_rate", stock_indices), 1)
+      
+
+      # Update the UI with random selections
+      updateSelectInput(session, "measure1", selected = random_measure1)
+      updateSelectInput(session, "measure2", selected = random_measure2)
+    })
   
   output$rate_plot <- renderPlotly({
     req(input$measure1, input$measure2)
