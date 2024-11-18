@@ -181,158 +181,144 @@ server <- function(input, output, session) {
       updateSelectInput(session, "measure2", selected = random_measure2)
     })
   
-  output$rate_plot <- renderPlotly({
-    req(input$measure1, input$measure2)
-    
-    measure1 <- input$measure1
-    measure2 <- input$measure2
-    
-    measures_inequ <- c(inequality_measures, homicide_measure)
-    measures_stock <- stock_indices
-    
-    measure1_in_inequ <- measure1 %in% measures_inequ
-    measure2_in_inequ <- measure2 %in% measures_inequ
-    
-    measure1_in_finance <- measure1 %in% measures_stock
-    measure2_in_finance <- measure2 %in% measures_stock
-    
-    # Filter inequ_homicide_data
-    if (measure1_in_inequ || measure2_in_inequ) {
-      req(input$country)
+    output$rate_plot <- renderPlotly({
+      req(input$measure1, input$measure2, input$country)
+      
+      measure1 <- input$measure1
+      measure2 <- input$measure2
+      
+      measures_inequ <- c(inequality_measures, homicide_measure)
+      measures_stock <- stock_indices
+      
+      # Generate a unique color for each country
+      selected_countries <- input$country
+      country_colors <- setNames(RColorBrewer::brewer.pal(min(length(selected_countries), 8), "Set1"), selected_countries)
+      
+      # Initialize plotly object
+      plot <- plot_ly()
+      
+      # Filter data for inequ_homicide_data
       filtered_inequ_data <- inequ_homicide_data %>%
-        filter(country %in% input$country) %>%
+        filter(country %in% selected_countries) %>%
         rename(Date = year_date)
-    } else {
-      filtered_inequ_data <- data.frame()
-    }
-    
-    # Filter finance_data_long
-    if (measure1_in_finance || measure2_in_finance) {
-      filtered_finance_data <- finance_data_long %>% filter(Index %in% c(measure1, measure2))
-    } else {
-      filtered_finance_data <- data.frame()
-    }
-    
-    # Initialize plotly object
-    plot <- plot_ly()
-    
-    # Add measure1
-    if (measure1_in_inequ) {
-      data1 <- filtered_inequ_data
-      for (country in unique(data1$country)) {
-        country_data <- data1 %>% filter(country == !!country)
-        plot <- plot %>% add_lines(
-          x = country_data$Date,
-          y = country_data[[measure1]],
-          name = paste(measure1, "-", country),
-          yaxis = "y1",
-          line = list(dash = 'solid')
-        )
+      
+      # Filter data for finance_data_long
+      filtered_finance_data <- finance_data_long %>%
+        filter(Index %in% c(measure1, measure2))
+      
+      # Add lines for the first measure
+      for (country in selected_countries) {
+        if (measure1 %in% measures_inequ) {
+          country_data <- filtered_inequ_data %>%
+            filter(country == !!country)
+          plot <- plot %>%
+            add_lines(
+              x = country_data$Date,
+              y = country_data[[measure1]],
+              name = paste(country, "-", measure1),
+              yaxis = "y1",
+              line = list(color = country_colors[country], dash = "solid")
+            )
+        } else if (measure1 %in% measures_stock) {
+          stock_data <- filtered_finance_data %>%
+            filter(Index == measure1)
+          plot <- plot %>%
+            add_lines(
+              x = stock_data$Date,
+              y = stock_data$Close,
+              name = paste(country, "-", measure1),
+              yaxis = "y1",
+              line = list(color = country_colors[country], dash = "solid")
+            )
+        }
       }
-    } else if (measure1_in_finance) {
-      data1 <- filtered_finance_data %>% filter(Index == measure1)
-      plot <- plot %>% add_lines(
-        x = data1$Date,
-        y = data1$Close,
-        name = measure1,
-        yaxis = "y1",
-        line = list(dash = 'solid')
-      )
-    }
-    
-    # Add measure2
-    if (measure2_in_inequ) {
-      data2 <- filtered_inequ_data
-      for (country in unique(data2$country)) {
-        country_data <- data2 %>% filter(country == !!country)
-        plot <- plot %>% add_lines(
-          x = country_data$Date,
-          y = country_data[[measure2]],
-          name = paste(measure2, "-", country),
-          yaxis = "y2",
-          line = list(dash = 'dash')
-        )
+      
+      # Add lines for the second measure
+      for (country in selected_countries) {
+        if (measure2 %in% measures_inequ) {
+          country_data <- filtered_inequ_data %>%
+            filter(country == !!country)
+          plot <- plot %>%
+            add_lines(
+              x = country_data$Date,
+              y = country_data[[measure2]],
+              name = paste(country, "-", measure2),
+              yaxis = "y2",
+              line = list(color = country_colors[country], dash = "dash")
+            )
+        } else if (measure2 %in% measures_stock) {
+          stock_data <- filtered_finance_data %>%
+            filter(Index == measure2)
+          plot <- plot %>%
+            add_lines(
+              x = stock_data$Date,
+              y = stock_data$Close,
+              name = paste(country, "-", measure2),
+              yaxis = "y2",
+              line = list(color = country_colors[country], dash = "dash")
+            )
+        }
       }
-    } else if (measure2_in_finance) {
-      data2 <- filtered_finance_data %>% filter(Index == measure2)
-      plot <- plot %>% add_lines(
-        x = data2$Date,
-        y = data2$Close,
-        name = measure2,
-        yaxis = "y2",
-        line = list(dash = 'dash')
-      )
-    }
-    
-    # Set up the layout with multiple y-axes
-    plot <- plot %>%
-      layout(
-        #title = "Comparison of Selected Measures",
-        xaxis = list(title = "Year"),
-        yaxis = list(title = measure1, side = "left"),
-        yaxis2 = list(title = measure2, overlaying = "y", side = "right"),
-        legend = list(
-          orientation = "h",    # Horizontal legend
-          y = -0.1,             # Place below the plot
-          x = 0.5,              # Center horizontally
-          xanchor = "center"    # Anchor the legend to the center
-        ),
-        margin = list(
-          b = 100,              # Add extra bottom margin for the legend
-          l = 50,
-          r = 50,
-          t = 0
-        )
-      )
-    
-    # Add world events if checkbox is selected
-    if (input$show_events) {
-      # Define the events
-      events <- data.frame(
-        date = as.Date(c("1991-01-01", "1997-01-01", "2000-01-01", "2008-01-01", "2020-01-01")),
-        label = c("Fall of the Soviet Union", "Asian Financial Crisis", "Dotcom Bubble Burst", "Financial Crisis", "COVID-19")
-      )
       
-      # Add vertical lines for events as shapes
-      event_shapes <- lapply(1:nrow(events), function(i) {
-        list(
-          type = "line",
-          x0 = events$date[i],
-          x1 = events$date[i],
-          y0 = 0,
-          y1 = 1,
-          xref = "x",
-          yref = "paper",
-          line = list(color = "black", dash = "dash")
-        )
-      })
-      
-      # Add annotations for events
-      event_annotations <- lapply(1:nrow(events), function(i) {
-        list(
-          x = events$date[i],
-          y = 0.98,  # Position slightly above the plot
-          xref = "x",
-          yref = "paper",
-          text = events$label[i],
-          showarrow = FALSE,
-          xanchor = 'left',
-          textangle = -90,
-          font = list(color = "grey", size = 12)
-        )
-      })
-      
-      # Add shapes and annotations to the plot layout
+      # Layout adjustments
       plot <- plot %>%
         layout(
-          shapes = event_shapes,
-          annotations = event_annotations
+          xaxis = list(title = "Year"),
+          yaxis = list(title = measure1, side = "left"),
+          yaxis2 = list(title = measure2, overlaying = "y", side = "right"),
+          legend = list(
+            orientation = "h",
+            y = -0.1,
+            x = 0.5,
+            xanchor = "center"
+          ),
+          margin = list(b = 100, l = 50, r = 50, t = 0)
         )
-    }
+      
+      # Add world events if checkbox is selected
+      if (input$show_events) {
+        events <- data.frame(
+          date = as.Date(c("1991-01-01", "1997-01-01", "2000-01-01", "2008-01-01", "2020-01-01")),
+          label = c("Fall of the Soviet Union", "Asian Financial Crisis", "Dotcom Bubble Burst", "Financial Crisis", "COVID-19")
+        )
+        
+        event_shapes <- lapply(1:nrow(events), function(i) {
+          list(
+            type = "line",
+            x0 = events$date[i],
+            x1 = events$date[i],
+            y0 = 0,
+            y1 = 1,
+            xref = "x",
+            yref = "paper",
+            line = list(color = "black", dash = "dash")
+          )
+        })
+        
+        event_annotations <- lapply(1:nrow(events), function(i) {
+          list(
+            x = events$date[i],
+            y = 0.98,
+            xref = "x",
+            yref = "paper",
+            text = events$label[i],
+            showarrow = FALSE,
+            xanchor = 'left',
+            textangle = -90,
+            font = list(color = "grey", size = 12)
+          )
+        })
+        
+        plot <- plot %>%
+          layout(
+            shapes = event_shapes,
+            annotations = event_annotations
+          )
+      }
+      
+      plot
+    })
     
-    plot
-  })
 }
-
 # Run the application 
 shinyApp(ui = ui, server = server)
