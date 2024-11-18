@@ -28,7 +28,6 @@ inequ_data_2017 <- inequ_data_orig %>%
     gini_coef = "Gini coefficient (before tax) (World Inequality Database)"
   )
 
-
 # 1. Merging 
 # Merge homicide and inequality data
 merged_data <- merge(homicide_data_2017, inequ_data_2017, by.x = "Country", by.y = "Country", na.rm = TRUE)

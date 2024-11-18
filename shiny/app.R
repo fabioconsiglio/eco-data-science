@@ -11,8 +11,9 @@ library(shiny)
 library(dplyr)
 library(plotly)
 library(readr)
-
-# Load data
+####
+### Data import
+####
 inequ_homicide_data <- read_csv("inequ_homicide_data.csv")
 
 finance_data_long <- read_csv("stock_data.csv")  # Load your finance dataset
@@ -25,42 +26,97 @@ head(finance_data_long)
 inequality_measures <- colnames(inequ_homicide_data)[c(-1,-2,-3,-4,-10)]  # Inequality measures
 homicide_measure <- colnames(inequ_homicide_data)[4]  # Homicide rate
 stock_indices <- unique(finance_data_long$Index)  # Stock indices
+
 # Define UI for application
 ui <- fluidPage(
-  titlePanel("Comparing Trends in Inequality, Homicide and Financial Development"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("measure1", "Select First Measure:",
-                  choices = list(
-                    "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
-                    "Stock Indices" = stock_indices
-                  ), selected = "Gini Coefficient" # Default selection
+  tags$head(
+    tags$style(HTML("
+      body {
+        overflow-x: hidden; /* Prevent horizontal scrolling */
+      }
+      .fixed-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 20%; /* Sidebar width */
+        height: 100%;
+        overflow-y: auto;
+        background-color: #a3d0e4 ; /* Optional: Background color */
+        padding: 20px; /* Add padding for better spacing */
+        z-index: 1000; /* Ensure it stays on top */
+        box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+      }
+      .main-content {
+        margin-left: 25%; /* Space for sidebar */
+        padding: 20px;
+        width: 100%; /* Remaining width for main content */
+      }
+      .app-title {
+        margin-left: 10%; /* Match the sidebar width for alignment */
+        padding: 10px 0; /* Add some vertical spacing */
+        font-size: 26px; /* Optional: Adjust font size for emphasis */
+        font-weight: bold; /* Optional: Make the title bold */
+        text-align: center; /* Align title to the left */
+      }
+      .select-input {
+        width: 100%; /* Ensure full width for inputs */
+      }
+      .action-buttons {
+        margin-top: 10px; /* Add spacing between the buttons */
+        display: flex;
+        flex-direction: column; /* Stack buttons vertically */
+        gap: 10px; /* Add spacing between buttons */
+      }
+      .shiny-output-error-validation {
+        color: red; /* Highlight validation errors */
+      }
+    "))
+  ),
+  div(class = "app-title", "Comparing Trends in Inequality, Homicide, and Financial Development"),
+  fluidRow(
+    div(
+      class = "fixed-sidebar",
+      div(class = "select-input",
+          selectInput("measure1", "Select First Measure:",
+                      choices = list(
+                        "Inequality Measures" = inequality_measures,
+                        "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
+                        "Stock Indices" = stock_indices
+                      ), selected = "Gini Coefficient" # Default selection
+          )
       ),
-      selectInput("measure2", "Select Second Measure:",
-                  choices = list(
-                    "Inequality Measures" = inequality_measures,
-                    "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
-                    "Stock Indices" = stock_indices
-                  ), 
-                  selected = "Palma Ratio" 
+      div(class = "select-input",
+          selectInput("measure2", "Select Second Measure:",
+                      choices = list(
+                        "Inequality Measures" = inequality_measures,
+                        "Homicide Rate" = list("Homicide Rate per 100k inhabitants" = "Homicide Rate"),
+                        "Stock Indices" = stock_indices
+                      ), selected = "Palma Ratio" 
+          )
       ),
-      # Always display the country selection input
-      selectInput("country", "Select Country:",
-                  choices = unique(inequ_homicide_data$country), selected = c("United States","Norway") , multiple = TRUE),
-      # Add checkbox for world events
+      div(class = "select-input",
+          selectInput("country", "Select Country:",
+                      choices = unique(inequ_homicide_data$country), 
+                      selected = c("United States", "Norway"), 
+                      multiple = TRUE)
+      ),
       checkboxInput("show_events", "Show World Events", value = FALSE),
-      actionButton("random_select", "Randomly Select Parameters"), 
-      # Button
-      downloadButton("downloadData", "Download Data as .csv")
-    ), 
-    
-    mainPanel(
-      plotlyOutput("rate_plot"),
-      includeHTML("description.html")
+      div(class = "action-buttons",
+          actionButton("random_select", "Randomly Select Parameters"), 
+          downloadButton("downloadData", "Download Data as .csv")
+      )
+    ),
+    div(
+      class = "main-content",
+      mainPanel(
+        plotlyOutput("rate_plot", height = "650"),  # Larger visualization
+        includeHTML("description.html")
+      )
     )
   )
 )
+
+
 
 # Define server logic
 server <- function(input, output, session) {
@@ -90,7 +146,7 @@ server <- function(input, output, session) {
           select(Date, Index, Close) %>%
           pivot_wider(names_from = Index, values_from = Close)
         
-        # If one measure from each dataset, merge them by date
+        # If one measure from each data set, merge them by date otherwise use one data set
       } else {
         # Filter inequality/homicide data based on selected country and measure
         filtered_inequ_data <- inequ_homicide_data %>%
@@ -104,7 +160,7 @@ server <- function(input, output, session) {
           select(Date, Close) %>%
           rename(year_date = Date, !!input$measure2 := Close)
         
-        # Merge both datasets on the date column
+        # Merge both data sets on the date column
         filtered_data <- merge(filtered_inequ_data, filtered_finance_data, by = "year_date", all = TRUE)
       }
       
@@ -214,8 +270,19 @@ server <- function(input, output, session) {
         #title = "Comparison of Selected Measures",
         xaxis = list(title = "Year"),
         yaxis = list(title = measure1, side = "left"),
-        yaxis2 = list(title = measure2, overlaying = "y", side = "right")
-        #legend = list(x = 5, y = -0.9)
+        yaxis2 = list(title = measure2, overlaying = "y", side = "right"),
+        legend = list(
+          orientation = "h",    # Horizontal legend
+          y = -0.1,             # Place below the plot
+          x = 0.5,              # Center horizontally
+          xanchor = "center"    # Anchor the legend to the center
+        ),
+        margin = list(
+          b = 100,              # Add extra bottom margin for the legend
+          l = 50,
+          r = 50,
+          t = 0
+        )
       )
     
     # Add world events if checkbox is selected
@@ -244,14 +311,14 @@ server <- function(input, output, session) {
       event_annotations <- lapply(1:nrow(events), function(i) {
         list(
           x = events$date[i],
-          y = 1.05,  # Position slightly above the plot
+          y = 0.98,  # Position slightly above the plot
           xref = "x",
           yref = "paper",
           text = events$label[i],
           showarrow = FALSE,
           xanchor = 'left',
           textangle = -90,
-          font = list(color = "black", size = 10)
+          font = list(color = "grey", size = 12)
         )
       })
       
