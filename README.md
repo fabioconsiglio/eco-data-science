@@ -34,5 +34,9 @@ This project explores descriptively the relationship between income inequality a
   - app.R: R Shiny app for interactive data visualization.
   - description.html: Short description that is included in the dashboard to explain the functions in the dashboard.
   - stock_data.csv / inequ_homicide_data.csv: Data for the dashboard (For publishing, storing data in the same folder was necessary).
-  
-  
+
+
+### Data Sources:
+- [Inequality measures](https://ourworldindata.org/economic-inequality#explore-data-on-economic-inequality)
+- [Homicide rates](https://ourworldindata.org/grapher/homicide-rate-unodc?time=earliest)
+- [Stock market indices](https://www.kaggle.com/datasets/mukhazarahmad/worldwide-stock-market-indices-data)
