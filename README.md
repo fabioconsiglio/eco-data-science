@@ -1,5 +1,8 @@
 # Project for ECON4170 - 24H Data science for economists
-### Contributors: Yannick Knieriemen & Fabian Mahner
+### Contributors: 
+Student 1: Candidate No. 17425 \\
+
+Student 2: Candidate No. 17422
 
 ### Project Description:
 
