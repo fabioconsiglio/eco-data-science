@@ -4,6 +4,9 @@ Student 1: Candidate No. 17425
 
 Student 2: Candidate No. 17422
 
+Dashboard Link:
+- [inequality dashboard](https://fbnmhnr.shinyapps.io/inequality-dashboard/)
+
 ### Project Description:
 
 This project explores descriptively the relationship between income inequality and various social and economic variables, such as crime rates and financial market trends, to provide insights with important policy implications.
